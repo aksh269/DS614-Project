@@ -247,7 +247,7 @@ We compared three access patterns: sequential column scans, random-access joins 
 | Finding | Validated By |
 |:---|:---|
 | DuckDB's performance is architectural, not accidental | End-to-end trace from ClientContext::Query() to PhysicalHashAggregate::Execute() |
-| STANDARD_VECTOR_SIZE = 2048 is a hardware-aware constant, not an arbitrary default | Source patching experiment — performance degrades at both 64 and 8192 |
+| `STANDARD_VECTOR_SIZE` = 2048 is a hardware-aware constant, not an arbitrary default | Source patching experiment — performance degrades at both 64 and 8192 |
 | SIMD has a concrete failure mode: string and branching workloads | Experiment 1 — LIKE speedup is the lowest across all tested query types |
 | Linear scaling is a deliberate consequence of batch-independent pipeline design | Experiment 4 — perfect linearity from SF=0.01 to SF=1.0 |
 | Random access joins structurally break the vectorization assumption | Experiment 5 — throughput collapses from 10,672 MB/s to 151 MB/s |
