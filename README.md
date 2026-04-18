@@ -1,16 +1,17 @@
-# 🦆 Systems Engineering Project: DuckDB Vectorisation
-
----
-
 <div align="center">
 
-| | |
-|:---|:---|
-| **Team** | The Data Engineers |
-| **Members** | Sanjana Nathani · Aksh Patel |
-| **System** | DuckDB — In-Process Analytical Database |
-| **Our Repo** | [github.com/duckdb/thedataengineers](https://github.com/aksh269/DS614-Project) |
-| **DuckDB Source** | [github.com/duckdb/duckdb](https://github.com/duckdb/duckdb) |
+# 🦆 Systems Engineering Project: DuckDB Vectorisation
+
+<br>
+
+**The Data Engineers** &nbsp;|&nbsp; Sanjana Nathani &nbsp;·&nbsp; Aksh Patel
+
+<br>
+
+[![Our Repository](https://img.shields.io/badge/Our%20Repo-DS614--Project-black?style=for-the-badge&logo=github)](https://github.com/aksh269/DS614-Project)
+[![DuckDB Source](https://img.shields.io/badge/DuckDB-Source%20Code-yellow?style=for-the-badge&logo=github)](https://github.com/duckdb/duckdb)
+
+<br>
 
 </div>
 
