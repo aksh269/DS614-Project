@@ -1,4 +1,4 @@
-# 🦆 DS614 (Big data Engineering): DuckDB Vectorisation
+# 🦆 DS614 (Big data Engineering): DuckDB Vectorization
 
 ---
 
