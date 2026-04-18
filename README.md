@@ -260,4 +260,4 @@ We compared three access patterns: sequential column scans, random-access joins 
 
 This project is built on top of the DuckDB open-source engine. Full credit to the DuckDB team and contributors at [github.com/duckdb/duckdb](https://github.com/duckdb/duckdb) for building and maintaining a remarkably well-architected system. The TPC-H benchmark data used in all experiments is generated via DuckDB's built-in tpch extension.
 
-All experiment scripts, plots, and the source-patch methodology in this report are original work by The Data Engineers team as part of the Systems Engineering course project.
+All experiment scripts, plots, and the source-patch methodology in this report are original work by The Data Engineers team as part of the "Big Data Engineering" course project.
