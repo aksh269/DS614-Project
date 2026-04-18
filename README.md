@@ -2,10 +2,10 @@
 
 ---
 
-**Team:** The Data Engineers
-**Members:** Sanjana Nathani · Aksh Patel
-**System Analyzed:** DuckDB — In-Process Analytical Database
-**Our Repository:** [github.com/aksh269/DS614-Project](https://github.com/aksh269/DS614-Project)
+**Team:** The Data Engineers <br>
+**Members:** Sanjana Nathani · Aksh Patel <br>
+**System Analyzed:** DuckDB — In-Process Analytical Database <br>
+**Our Repository:** [github.com/aksh269/DS614-Project](https://github.com/aksh269/DS614-Project) <br>
 **DuckDB Source:** [github.com/duckdb/duckdb](https://github.com/duckdb/duckdb)
 
 ---
