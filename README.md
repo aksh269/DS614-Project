@@ -4,12 +4,15 @@
 
 <br>
 
-**The Data Engineers** &nbsp;|&nbsp; Sanjana Nathani &nbsp;·&nbsp; Aksh Patel
+**Team &nbsp;·&nbsp; The Data Engineers**
+
+Sanjana Nathani &nbsp;&nbsp;·&nbsp;&nbsp; Aksh Patel
 
 <br>
 
-[![Our Repository](https://img.shields.io/badge/Our%20Repo-DS614--Project-black?style=for-the-badge&logo=github)](https://github.com/aksh269/DS614-Project)
-[![DuckDB Source](https://img.shields.io/badge/DuckDB-Source%20Code-yellow?style=for-the-badge&logo=github)](https://github.com/duckdb/duckdb)
+*System Analyzed — DuckDB, In-Process Analytical Database*
+
+[Our Repository](https://github.com/aksh269/DS614-Project) &nbsp;&nbsp;·&nbsp;&nbsp; [DuckDB Source Code](https://github.com/duckdb/duckdb)
 
 <br>
 
