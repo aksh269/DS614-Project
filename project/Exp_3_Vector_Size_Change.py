@@ -1,3 +1,11 @@
+# Experiment 3: Impact of Vector Size on Query Performance (DuckDB)
+'''
+This experiment analyzes how changing the internal vector size in DuckDB affects query performance. 
+By modifying the `DEFAULT_STANDARD_VECTOR_SIZE` parameter in the source code and rebuilding the system, 
+we evaluate execution time across different vector sizes using TPC-H queries. The goal is to identify 
+the optimal “Goldilocks” vector size that balances computation efficiency and memory/cache utilization.
+'''
+
 import os
 import re
 import csv
@@ -12,7 +20,7 @@ from pathlib import Path
 DUCKDB_ROOT = Path(__file__).parent.parent / "duckdb"
 VECTOR_HEADER = DUCKDB_ROOT / "src/include/duckdb/common/vector_size.hpp"
 BUILD_DIR = DUCKDB_ROOT / "build"
-DUCKDB_BIN = BUILD_DIR / "duckdb" # macOS/Linux CMake output
+DUCKDB_BIN = BUILD_DIR / "duckdb"
 
 print("DUCKDB_ROOT:", DUCKDB_ROOT)
 print("VECTOR_HEADER:", VECTOR_HEADER)
@@ -21,7 +29,7 @@ print("Exists:", VECTOR_HEADER.exists())
 VECTOR_SIZES = [64, 512, 2048, 8192]
 REPEATS = 3
 RESULTS_CSV = Path(__file__).parent / "goldilocks_vector_size_results.csv"
-TPCH_SF = 0.1   # start small
+TPCH_SF = 0.1
 
 # =========================
 # QUERIES
