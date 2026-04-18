@@ -48,8 +48,8 @@ For Experiment 3 only (source patching and rebuild), you additionally need CMake
 
 ### Clone Our Repo
 
-    git clone https://github.com/duckdb/thedataengineers.git
-    cd thedataengineers
+    git clone https://github.com/aksh269/DS614-Project
+    cd DS614-Project
 
 ### Clone DuckDB Source (Required for Experiment 3)
 
@@ -93,27 +93,27 @@ We traced this query through DuckDB's source from entry point to final result:
 DuckDB does not pass individual rows between operators. It pushes fixed-size batches of columnar data called DataChunks through a pipeline DAG — the **vectorized push-based iteration model**.
 
 ### Step 1 — Query Submission and Parsing
-**File:** src/main/client_context.cpp → ClientContext::Query()
+**File:** `src/main/client_context.cpp` → `ClientContext::Query()`
 
 The raw SQL enters via ClientContext, the top-level session object. It is passed to the Parser which generates a Logical AST. No execution occurs here — parsing, planning, and execution are cleanly separated phases, enabling optimizer intervention before any physical decisions are made.
 
 ### Step 2 — Physical Plan Generation
-**File:** src/execution/physical_plan_generator.cpp → PhysicalPlanGenerator::CreatePlan()
+**File:** `src/execution/physical_plan_generator.cpp` → `PhysicalPlanGenerator::CreatePlan()`
 
 The logical plan is lowered into a physical execution DAG. For our query, the planner instantiates PhysicalHashAggregate on top of PhysicalTableScan. The key architectural choice here: DuckDB uses a **push model** rather than PostgreSQL's Volcano pull model, eliminating per-row virtual function call overhead entirely.
 
 ### Step 3 — Pipeline Task Execution
-**File:** src/execution/executor.cpp → Executor::ExecuteTask()
+**File:** `src/execution/executor.cpp` → `Executor::ExecuteTask()`
 
 Execution is decomposed into Pipeline objects — linear chains of operators. The Executor schedules these as parallel tasks. Operators pull DataChunks from their source and push results upward, keeping the CPU continuously fed.
 
 ### Step 4 — Data Fetching (The Vectorized Core)
-**File:** src/common/types/data_chunk.cpp → DataChunk::Fetch()
+**File:** `src/common/types/data_chunk.cpp` → `DataChunk::Fetch()`
 
 Data is not read as tuples. It is read as contiguous column arrays wrapped in a DataChunk — one Vector per column, each holding up to STANDARD_VECTOR_SIZE (default 2048) values. Memory layout is column-major: all values for l_quantity are contiguous before any values for l_returnflag appear. This is what enables cache-line efficiency and SIMD.
 
 ### Step 5 — Operator Execution on the DataChunk
-**File:** src/execution/operator/aggregate/physical_hash_aggregate.cpp → PhysicalHashAggregate::Execute()
+**File:** `src/execution/operator/aggregate/physical_hash_aggregate.cpp` → `PhysicalHashAggregate::Execute()`
 
 The aggregation operator receives an entire DataChunk and tight-loops over raw C++ arrays to compute SUM(l_quantity). This flat, contiguous loop structure is precisely what allows the compiler to emit AVX/SSE SIMD instructions and what keeps data inside L1/L2 cache for the entire computation.
 
@@ -123,7 +123,7 @@ The aggregation operator receives an entire DataChunk and tight-loops over raw C
 
 ### Decision 1 — Vectorized DataChunk Processing vs Tuple-at-a-Time
 
-**File:** src/common/types/data_chunk.cpp and src/common/types/vector.cpp
+**File:** `src/common/types/data_chunk.cpp` and `src/common/types/vector.cpp`
 
 **Problem solved:** Volcano-style systems invoke a virtual next() call per row. On a 100M row scan, that is 100M function calls, 100M branch predictions, and continuous cache misses as the CPU jumps between operator stacks. The CPU spends more time on overhead than computation.
 
@@ -137,7 +137,7 @@ The aggregation operator receives an entire DataChunk and tight-loops over raw C
 
 ### Decision 2 — Hardcoded Standard Vector Size (STANDARD_VECTOR_SIZE = 2048)
 
-**File:** src/include/duckdb/common/vector_size.hpp — #define DEFAULT_STANDARD_VECTOR_SIZE 2048U
+**File:** `src/include/duckdb/common/vector_size.hpp` — `#define DEFAULT_STANDARD_VECTOR_SIZE 2048U`
 
 **Problem solved:** Batch size is compiled in, not tunable at runtime. This guarantees that the working set per operator (2048 values × 8 bytes = 16 KB per column) fits comfortably within modern L1/L2 CPU caches (typically 32–256 KB), eliminating slow DRAM fetches during computation.
 
@@ -152,7 +152,7 @@ The aggregation operator receives an entire DataChunk and tight-loops over raw C
 
 ### Decision 3 — SIMD Hardware Acceleration (With a Known Failure Mode)
 
-**File:** src/execution/expression_executor.cpp
+**File:** `src/execution/expression_executor.cpp`
 
 **Problem solved:** Modern CPUs support Single Instruction Multiple Data (SIMD) — executing the same arithmetic on 4–16 values simultaneously using AVX/SSE registers. By storing column data in flat C++ arrays with no pointer aliasing, DuckDB lets the compiler automatically vectorize tight loops into SIMD instructions, multiplying arithmetic throughput without explicit hardware code.
 
@@ -168,10 +168,10 @@ The aggregation operator receives an entire DataChunk and tight-loops over raw C
 
 | Course Concept | Implementation in DuckDB | Code Evidence |
 |:---|:---|:---|
-| **Execution: DAG** | Every SQL query compiles to a strict DAG of PhysicalOperator nodes. Data flows from scan leaf nodes to the query root through Pipeline states with no cycles. | src/execution/physical_plan_generator.cpp |
-| **Execution: Vectorization / Batching** | Instead of Volcano tuple iteration or MapReduce shuffle, DuckDB uses a vectorized push model transmitting DataChunks of 2048 rows between operators — the columnar equivalent of micro-batching. | src/common/types/data_chunk.cpp |
-| **Storage: Cache Locality** | Columnar in-memory layout stores all values of a column contiguously before the next column begins. STANDARD_VECTOR_SIZE is explicitly chosen to respect L1/L2 cache size boundaries for the operator working set. | src/include/duckdb/common/vector_size.hpp |
-| **Hardware Acceleration: SIMD** | Expression evaluation loops operate on raw C++ arrays with no pointer aliasing, enabling the compiler to emit AVX/SSE vector instructions automatically. Degrades predictably on string and branching workloads. | src/execution/expression_executor.cpp |
+| **Execution: DAG** | Every SQL query compiles to a strict DAG of PhysicalOperator nodes. Data flows from scan leaf nodes to the query root through Pipeline states with no cycles. | `src/execution/physical_plan_generator.cpp` |
+| **Execution: Vectorization / Batching** | Instead of Volcano tuple iteration or MapReduce shuffle, DuckDB uses a vectorized push model transmitting DataChunks of 2048 rows between operators — the columnar equivalent of micro-batching. | `src/common/types/data_chunk.cpp` |
+| **Storage: Cache Locality** | Columnar in-memory layout stores all values of a column contiguously before the next column begins. STANDARD_VECTOR_SIZE is explicitly chosen to respect L1/L2 cache size boundaries for the operator working set. | `src/include/duckdb/common/vector_size.hpp` |
+| **Hardware Acceleration: SIMD** | Expression evaluation loops operate on raw C++ arrays with no pointer aliasing, enabling the compiler to emit AVX/SSE vector instructions automatically. Degrades predictably on string and branching workloads. | `src/execution/expression_executor.cpp` |
 
 ---
 
@@ -181,15 +181,15 @@ This is the centerpiece experiment. We did not run DuckDB as a black box — we 
 
 ### Hypothesis
 
-STANDARD_VECTOR_SIZE = 2048 exists in a deliberate Goldilocks zone. Too small and DuckDB degrades toward row-at-a-time behavior. Too large and the DataChunk working set spills out of CPU cache into DRAM, destroying throughput.
+`STANDARD_VECTOR_SIZE` = 2048 exists in a deliberate Goldilocks zone. Too small and DuckDB degrades toward row-at-a-time behavior. Too large and the DataChunk working set spills out of CPU cache into DRAM, destroying throughput.
 
 ### Methodology
 
-Script: project/Exp_3_Vector_Size_Change.py
+Script: `project/Exp_3_Vector_Size_Change.py`
 
-1. Located the constant in src/include/duckdb/common/vector_size.hpp
+1. Located the constant in `src/include/duckdb/common/vector_size.hpp`
 2. Programmatically patched the header using Python regex substitution to values 64, 512, 2048, and 8192
-3. Triggered a full clean CMake rebuild for each: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DBUILD_EXTENSIONS=tpch
+3. Triggered a full clean CMake rebuild for each: `cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DBUILD_EXTENSIONS=tpch`
 4. Benchmarked TPC-H Q1 (heavy aggregation) and Q6 (filtered arithmetic) across 3 runs per vector size
 5. Saved all results to project/goldilocks_vector_size_results.csv
 6. Restored the original header after all experiments concluded
@@ -205,7 +205,7 @@ Script: project/Exp_3_Vector_Size_Change.py
 
 **At vector size 64:** DuckDB behaves like a row-based system. Each operator is invoked 32x more frequently, saturating the CPU with function call overhead. The SIMD advantage evaporates when loops only process 64 elements before returning.
 
-**At vector size 8192:** The DataChunk allocation (8192 values × 8 bytes × active columns) structurally exceeds L1/L2 cache capacity. The CPU prefetcher can no longer predict the next cache line, and every vector access triggers expensive DRAM fetches — the exact scenario STANDARD_VECTOR_SIZE was designed to prevent.
+**At vector size 8192:** The DataChunk allocation (8192 values × 8 bytes × active columns) structurally exceeds L1/L2 cache capacity. The CPU prefetcher can no longer predict the next cache line, and every vector access triggers expensive DRAM fetches — the exact scenario `STANDARD_VECTOR_SIZE` was designed to prevent.
 
 ![Vector Sizing Performance Curves](project/plots/exp_3.png)
 ![Vector Sizing Bar Chart](project/plots/exp_3(1).png)
@@ -216,7 +216,7 @@ Script: project/Exp_3_Vector_Size_Change.py
 
 ### Failure 1 — What Happens When Data Size Increases Significantly?
 
-Script: project/Exp_4_Scale_Factor.py
+Script: `project/Exp_4_Scale_Factor.py`
 
 We expanded the TPC-H Scale Factor from SF=0.01 to SF=1.0 and measured execution time for a constant aggregation query across all sizes.
 
@@ -228,7 +228,7 @@ We expanded the TPC-H Scale Factor from SF=0.01 to SF=1.0 and measured execution
 
 ### Failure 2 — What Structural Assumptions Does DuckDB Rely On, and What Breaks Them?
 
-Script: project/Exp_5_Cache_Efficiency.py
+Script: `project/Exp_5_Cache_Efficiency.py`
 
 We compared three access patterns: sequential column scans, random-access joins (using random() < 0.01 subquery sampling to force non-deterministic join order), and hash aggregation.
 
