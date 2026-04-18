@@ -1,4 +1,4 @@
-# 🦆 Systems Engineering Project: DuckDB Vectorisation
+# 🦆 DS614 (Big data Engineering): DuckDB Vectorisation
 
 ---
 
