@@ -14,9 +14,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-# =========================
 # CONFIG
-# =========================
 DUCKDB_ROOT = Path(__file__).parent.parent / "duckdb"
 VECTOR_HEADER = DUCKDB_ROOT / "src/include/duckdb/common/vector_size.hpp"
 BUILD_DIR = DUCKDB_ROOT / "build"
@@ -31,9 +29,7 @@ REPEATS = 3
 RESULTS_CSV = Path(__file__).parent / "goldilocks_vector_size_results.csv"
 TPCH_SF = 0.1
 
-# =========================
 # QUERIES
-# =========================
 Q1 = """
 SELECT l_returnflag, l_linestatus,
        SUM(l_quantity), SUM(l_extendedprice)
@@ -50,9 +46,8 @@ WHERE l_shipdate >= DATE '1994-01-01'
   AND l_quantity < 24;
 """
 
-# =========================
 # HELPERS
-# =========================
+
 
 def run_cmd(cmd, cwd=None):
     print(f"[RUN] {' '.join(cmd)}")
@@ -122,9 +117,7 @@ def benchmark(query, db_path):
         times.append(t)
     return times, sum(times) / len(times)
 
-# =========================
 # MAIN
-# =========================
 
 def save_csv(results):
     with open(RESULTS_CSV, "w", newline="") as f:
@@ -155,14 +148,14 @@ def main():
             print(f"VECTOR SIZE = {size}")
             print("="*60)
 
-            # 1. Patch
+            #  Patch
             patch_vector_size(VECTOR_HEADER, size)
 
-            # 2. Rebuild
+            #  Rebuild
             clean_build()
             build_duckdb()
 
-            # 3. Prepare DB
+            #  Prepare DB
             db_name = f"tpch_sf{TPCH_SF}_vec{size}.duckdb"
             db_path = str(DUCKDB_ROOT / db_name)
 
@@ -171,7 +164,7 @@ def main():
 
             prepare_tpch(db_path)
 
-            # 4. Benchmark
+            #  Benchmark
             print("\n[Q1]")
             q1_times, q1_avg = benchmark(Q1, db_path)
 
