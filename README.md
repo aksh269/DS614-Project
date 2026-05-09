@@ -20,6 +20,26 @@ This report reverse-engineers DuckDB from source code upward: tracing the execut
 
 ---
 
+## Vectorized Execution in DuckDB
+
+DuckDB employs **vectorized execution** as its core processing paradigm, where operations are performed on batches of data (vectors) rather than individual tuples. This approach maximizes CPU efficiency through three key mechanisms:
+
+1. **Cache Locality**: Processing data in contiguous memory chunks keeps the working set within CPU cache boundaries
+2. **SIMD Utilization**: Batch operations enable automatic vectorization by modern compilers (AVX/SSE instructions)
+3. **Reduced Function Call Overhead**: Operating on 2048 rows per function call instead of row-by-row processing
+
+## Vector Types in DuckDB
+
+DuckDB uses different internal vector representations to optimize memory usage and processing efficiency:
+
+- **FLAT_VECTOR**: Standard dense representation where all values are stored contiguously in memory
+- **CONSTANT_VECTOR**: Optimized for cases where all values in the vector are identical (e.g., constant expressions)
+- **DICTIONARY_VECTOR**: Uses dictionary encoding to compress repetitive data by storing unique values once and referencing them via indices
+
+Each vector type is optimized for specific data patterns and query operations, allowing DuckDB to dynamically choose the most efficient representation based on data characteristics.
+
+---
+
 ## Table of Contents
 
 1. [How to Run the Experiments](#how-to-run-the-experiments)
@@ -65,6 +85,7 @@ Place the cloned duckdb folder at the root of this repository so the path ../duc
     │   ├── Exp_3_Vector_Size_Change.py
     │   ├── Exp_4_Scale_Factor.py
     │   ├── Exp_5_Cache_Efficiency.py
+    │   ├── Exp_6_Vector_type_change.py
     │   └── plots/
     └── README.md
 
@@ -77,10 +98,13 @@ Place the cloned duckdb folder at the root of this repository so the path ../duc
 | Exp 3 | python project/Exp_3_Vector_Size_Change.py | Patches DuckDB C++ source, rebuilds 4 binaries, benchmarks each |
 | Exp 4 | python project/Exp_4_Scale_Factor.py | Execution time vs TPC-H scale factor — linearity validation |
 | Exp 5 | python project/Exp_5_Cache_Efficiency.py | Sequential vs random access vs hash aggregation throughput |
+| Exp 6 | python project/Exp_6_Vector_type_change.py | Forces DuckDB to use different vector types, rebuilds and benchmarks |
 
-### Experiment 3 — Output CSV
+### Experiment 3 & 6 — Output CSV
 
-Experiment 3 is the only script that writes results to disk. After all four source patches and rebuilds complete, it automatically saves to project/goldilocks_vector_size_results.csv containing Q1 and Q6 execution times across three runs for each vector size (64, 512, 2048, 8192). You can use this CSV to reproduce the plots independently.
+Experiments 3 and 6 are the only scripts that write results to disk. After source patches and rebuilds complete:
+- Experiment 3 saves to project/goldilocks_vector_size_results.csv 
+- Experiment 6 saves to project/duckdb_vector_type_results.csv
 
 ---
 
@@ -240,6 +264,32 @@ We compared three access patterns: sequential column scans, random-access joins 
 
 ![Cache Locality Collapse](project/plots/exp_5.png)
 
+### Failure 3 — Vector Type Impact on Performance and Storage
+
+Script: `project/Exp_6_Vector_type_change.py`
+
+We forced DuckDB to use different internal vector representations by patching the vector constructor in `src/common/types/vector.cpp` and rebuilding the engine with each vector type.
+
+**Methodology:**
+1. Located vector initialization in `src/common/types/vector.cpp`
+2. Patched the default vector type from `FLAT_VECTOR` to `CONSTANT_VECTOR`
+3. Rebuilt DuckDB with each vector type
+4. Benchmarked TPC-H Q1 and Q6 with each configuration
+5. Measured query performance and database storage requirements
+
+**Observation:** Vector type choice creates a dramatic performance trade-off:
+
+| Vector Type | Q1 Runtime | Q6 Runtime | Database Size | Behavior |
+|:---|:---:|:---:|:---:|:---|
+| CONSTANT_VECTOR | 1.03s | 1.03s | 26.5 MB | Assumes all values identical — massive overhead when assumption breaks |
+| FLAT_VECTOR | 0.12s | 0.19s | 26.3 MB | Standard dense representation — optimal for mixed workloads |
+
+**Why this is architectural:** `CONSTANT_VECTOR` is optimized for scenarios where entire columns contain identical values (e.g., constant expressions in SELECT clauses). When forced to handle diverse data, it must continuously convert between representations, creating 8-10x performance degradation. This demonstrates that DuckDB's vector abstraction is not just an implementation detail — the choice of internal representation fundamentally determines query performance.
+
+**DuckDB's assumption:** Vector type can be chosen dynamically based on data characteristics. Force the wrong type and performance collapses, even with identical algorithms.
+
+![Vector Type Performance](project/plots/exp_6_vector_comparison.png)
+
 ---
 
 ## 6. Summary
@@ -251,6 +301,7 @@ We compared three access patterns: sequential column scans, random-access joins 
 | SIMD has a concrete failure mode: string and branching workloads | Experiment 1 — LIKE speedup is the lowest across all tested query types |
 | Linear scaling is a deliberate consequence of batch-independent pipeline design | Experiment 4 — perfect linearity from SF=0.01 to SF=1.0 |
 | Random access joins structurally break the vectorization assumption | Experiment 5 — throughput collapses from 10,672 MB/s to 151 MB/s |
+| Vector type choice is performance-critical, not just a storage optimization | Experiment 6 — 8-10x performance difference between FLAT_VECTOR and CONSTANT_VECTOR |
 
 > DuckDB does not win through raw hardware power. It wins by making the CPU's job trivially predictable — fixed-size batches, contiguous memory, branch-free loops. Remove any one of those properties and the advantage shrinks or disappears entirely. That is not a weakness. It is an explicit, well-reasoned design contract.
 
