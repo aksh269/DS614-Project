@@ -2,6 +2,7 @@
 
 **Course:** DS614 — Big Data Engineering  
 **Team:** The Data Engineers  
+**Guide:** Prof. Ankush Chander
 **Members:** Sanjana Nathani · Aksh Patel  
 **Institution:** DAU, Semester 2  
 **System Analyzed:** DuckDB — In-Process Analytical Columnar Database  
@@ -532,46 +533,6 @@ Too large (e.g., 8192):
 #define DEFAULT_STANDARD_VECTOR_SIZE 8192U
 ```
 
-#### How the Patch Was Applied
-
-```python
-# project/Exp_3_Vector_Size_Change.py — key section
-
-VECTOR_HEADER = Path(__file__).parent.parent / \
-    "duckdb/src/include/duckdb/common/vector_size.hpp"
-BUILD_DIR = Path(__file__).parent.parent / "duckdb/build"
-
-for size in [64, 512, 2048, 8192]:
-    # 1. Read original header
-    with open(VECTOR_HEADER, 'r') as f:
-        content = f.read()
-
-    # 2. Regex substitution — changes ONLY the default vector size line
-    pattern     = r'#define DEFAULT_STANDARD_VECTOR_SIZE \d+U'
-    replacement = f'#define DEFAULT_STANDARD_VECTOR_SIZE {size}U'
-    content_patched = re.sub(pattern, replacement, content)
-
-    # 3. Write modified header back
-    with open(VECTOR_HEADER, 'w') as f:
-        f.write(content_patched)
-
-    # 4. FULL REBUILD from source — forces recompilation of all 40+ affected files
-    subprocess.run([
-        'cmake', '--build', str(BUILD_DIR),
-        '--config', 'Release',
-        '-j8'                   # 8 parallel compile jobs
-    ], check=True)
-
-    # 5. Benchmark patched binary
-    conn = duckdb.connect(str(DB_PATH))
-    for query_name, sql in BENCHMARK_QUERIES.items():
-        for run in range(NUM_RUNS):
-            start = time.perf_counter()
-            conn.execute(sql).fetchall()
-            duration_ms = (time.perf_counter() - start) * 1000
-            results.append({'vector_size': size, 'query': query_name,
-                             'run': run, 'duration_ms': duration_ms})
-
 # 6. Restore original header
 with open(VECTOR_HEADER, 'w') as f:
     f.write(original_content)
@@ -849,43 +810,6 @@ Vector::Vector(LogicalType type_p, bool create_data, bool zero_data,
     }
 }
 ```
-
-**How the patch was applied:**
-
-```python
-# project/Exp_6_Vector_type_change.py — key section
-
-VECTOR_CPP = Path(__file__).parent.parent / "duckdb/src/common/types/vector.cpp"
-
-for target_type in ["CONSTANT_VECTOR", "FLAT_VECTOR"]:
-    # 1. Read original source
-    with open(VECTOR_CPP, 'r') as f:
-        content = f.read()
-
-    # 2. Patch constructor initialization line
-    pattern     = r'vector_type\(VectorType::\w+\)'
-    replacement = f'vector_type(VectorType::{target_type})'
-    content_patched = re.sub(pattern, replacement, content, count=1)
-
-    # 3. Write patched source
-    with open(VECTOR_CPP, 'w') as f:
-        f.write(content_patched)
-
-    # 4. Rebuild DuckDB — recompiles vector.cpp and all operators
-    subprocess.run([
-        'cmake', '--build', str(BUILD_DIR),
-        '--config', 'Release', '-j8'
-    ], check=True)
-
-    # 5. Benchmark with patched binary
-    conn = duckdb.connect(str(DB_PATH))
-    for run in range(NUM_RUNS):
-        for query_name, sql in BENCHMARK_QUERIES.items():
-            t0 = time.perf_counter()
-            conn.execute(sql).fetchall()
-            duration_ms = (time.perf_counter() - t0) * 1000
-            results.append({'type': target_type, 'query': query_name,
-                             'run': run, 'duration_ms': duration_ms})
 
 # 6. Restore original file
 with open(VECTOR_CPP, 'w') as f:
@@ -1290,19 +1214,14 @@ python3 Exp_6_Vector_type_change.py
 ## 11. Credits
 
 **Team:**
-- Sanjana Nathani — DAU, DS614, Semester 2
-- Aksh Patel — DAU, DS614, Semester 2
+- Sanjana Nathani (M.Sc. Data Science, DAU Gandhinagar)
+- Aksh Patel (M.Sc. Data Science, DAU Gandhinagar)
+- Prof. Ankush Chander (Professor and Guide)
 
 **Acknowledgments:**
 - The DuckDB team at CWI Amsterdam and contributors at [github.com/duckdb/duckdb](https://github.com/duckdb/duckdb) — for building and maintaining an exceptionally well-documented open-source system
 - Course instructor, DS614 — for the reverse-engineering methodology that shaped this project
 - TPC-H Benchmark Suite — all analytical workloads generated via DuckDB's built-in `tpch` extension
-
-**Key References:**
-- [DuckDB: An Embeddable Analytical Database](https://duckdb.org/pdf/SIGMOD2019-demo-duckdb.pdf) — Raasveldt & Mühleisen, SIGMOD 2019
-- [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf) — Boncz et al., CIDR 2005
-- Intel 64 Architecture Optimization Reference Manual
-- GCC Auto-Vectorization Guide: [gcc.gnu.org/projects/tree-ssa/vectorization.html](https://gcc.gnu.org/projects/tree-ssa/vectorization.html)
 
 ---
 
