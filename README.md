@@ -204,12 +204,12 @@ GROUP BY l_returnflag, l_linestatus;
 │  Step 4: DataChunk (The Core Abstraction)                   │
 │  File: src/common/types/data_chunk.cpp                      │
 │                                                             │
-│  l_returnflag:    [A, A, R, N, R, ...] ← 2048 values       │
-│  l_linestatus:    [F, O, F, F, O, ...] ← 2048 values       │
-│  l_quantity:      [17,36,12,45, ...  ] ← 2048 values       │
-│  l_extendedprice: [25.5,45.1, ...    ] ← 2048 values       │
+│  l_returnflag:    [A, A, R, N, R, ...] ← 2048 values        │
+│  l_linestatus:    [F, O, F, F, O, ...] ← 2048 values        │
+│  l_quantity:      [17,36,12,45, ...  ] ← 2048 values        │
+│  l_extendedprice: [25.5,45.1, ...    ] ← 2048 values        │
 │                                                             │
-│  Column-major layout → CPU prefetcher loads ahead          │
+│  Column-major layout → CPU prefetcher loads ahead           │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
@@ -218,8 +218,8 @@ GROUP BY l_returnflag, l_linestatus;
 │  File: src/execution/operator/aggregate/                    │
 │        physical_hash_aggregate.cpp                          │
 │                                                             │
-│  for (i = 0; i < 2048; i++) {                              │
-│      hash_table[flags[i]] += quantities[i];  ← SIMD here  │
+│  for (i = 0; i < 2048; i++) {                               │
+│      hash_table[flags[i]] += quantities[i];  ← SIMD here    │
 │  }                                                          │
 └────────────────────────┬────────────────────────────────────┘
                          │
