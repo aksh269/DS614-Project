@@ -533,7 +533,7 @@ Too large (e.g., 8192):
 #define DEFAULT_STANDARD_VECTOR_SIZE 8192U
 ```
 
-# 6. Restore original header
+##### Restore original header
 with open(VECTOR_HEADER, 'w') as f:
     f.write(original_content)
 
@@ -810,7 +810,7 @@ Vector::Vector(LogicalType type_p, bool create_data, bool zero_data,
 }
 ```
 
-# 6. Restore original file
+##### Restore original file
 ```
 with open(VECTOR_CPP, 'w') as f:
     f.write(original_content)
