@@ -536,7 +536,6 @@ Too large (e.g., 8192):
 # 6. Restore original header
 with open(VECTOR_HEADER, 'w') as f:
     f.write(original_content)
-```
 
 #### Benchmark Queries Used
 
@@ -812,6 +811,7 @@ Vector::Vector(LogicalType type_p, bool create_data, bool zero_data,
 ```
 
 # 6. Restore original file
+```
 with open(VECTOR_CPP, 'w') as f:
     f.write(original_content)
 ```
@@ -827,7 +827,7 @@ with open(VECTOR_CPP, 'w') as f:
 
 `lineitem.l_quantity` contains values like `[17, 36, 12, 45, 23, 8, ...]` — a different value per row. A `CONSTANT_VECTOR` stores only one value and repeats it logically. When DuckDB receives a `CONSTANT_VECTOR` for `l_quantity` but the data is clearly not constant, it must:
 
-```
+
 Step 1: Type-check dispatch in expression_executor.cpp
   → "This vector claims to be CONSTANT but I need FLAT for aggregation"
   → Materialize: allocate a new FLAT buffer of 2048 × 8 bytes
@@ -841,7 +841,6 @@ Cost per batch: ~5–10 µs (allocation + copy)
 Batches for 100M rows: ~48,828
 Total overhead: 5 µs × 48,828 ≈ 244 seconds
 (in practice, constant folding catches some — measured: ~1 second overhead per query)
-```
 
 Compare to `FLAT_VECTOR`: no type-check, no allocation, no copy — straight to the aggregation loop.
 
