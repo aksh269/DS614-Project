@@ -350,7 +350,7 @@ void TemplatedExecuteComparison(Vector &left, Vector &right, Vector &result) {
 
 ---
 
-## 7. Experiments — Deep Dive
+## 7. Experiments
 
 ### Experiment 1: Vectorized vs Row-Based Execution
 
@@ -923,7 +923,7 @@ Compare to `FLAT_VECTOR`: no type-check, no allocation, no copy — straight to 
 
 **Architectural lesson:** Vector type is not an implementation detail. It is a contract between the planner (which selects the type) and the operators (which assume the type is correct). Violating this contract triggers silent cascading conversions that degrade performance by nearly an order of magnitude without any error.
 
-![Experiment 6 — Vector Type Comparison](project/plots/exp_6_vector_comparison.png)
+![Experiment 6 — Vector Type Comparison](project/plots/q6_avg_runtime.png)
 
 ---
 
